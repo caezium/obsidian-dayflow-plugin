@@ -64,7 +64,7 @@ Flip a toggle to query your local ActivityWatch and get precise per-app minutes 
 
 ### Manual install
 1. Download `main.js`, `manifest.json`, `styles.css`, `sql-wasm.wasm` from the latest [release](https://github.com/caezium/obsidian-dayflow-plugin/releases)
-2. Place them in `<vault>/.obsidian/plugins/obsidian-dayflow/`
+2. Place them in `<vault>/.obsidian/plugins/dayflow/`
 3. Reload Obsidian, then enable **Dayflow** in Settings → Community plugins
 
 ### Requirements
@@ -127,7 +127,7 @@ npm install
 npm run build   # type-check + bundle to main.js
 ```
 
-Output: `main.js` (CJS bundle, ~150 KB), `sql-wasm.wasm` (~644 KB) copied from `node_modules/sql.js/dist/`. Drop those + `manifest.json` + `styles.css` into `<vault>/.obsidian/plugins/obsidian-dayflow/`.
+Output: `main.js` (CJS bundle, ~150 KB), `sql-wasm.wasm` (~644 KB) copied from `node_modules/sql.js/dist/`. Drop those + `manifest.json` + `styles.css` into `<vault>/.obsidian/plugins/dayflow/`.
 
 ---
 
