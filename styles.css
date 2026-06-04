@@ -1,5 +1,5 @@
-/* Dayflow plugin styles. Most chart styling is inline in the SVG; these
-   wrappers give the SVGs proper spacing and constrain max width. */
+/* Dayflow plugin styles. SVGs use currentColor inline; these wrappers
+   give them spacing and constrain max width. */
 
 .dayflow-treemap,
 .dayflow-bars,
@@ -16,4 +16,71 @@
   max-width: 100%;
   height: auto;
   display: block;
+}
+
+/* Status bar item */
+.dayflow-status {
+  cursor: pointer;
+}
+
+/* Today side-pane */
+.dayflow-today-view {
+  padding: 12px 14px;
+}
+
+.dayflow-today-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dayflow-today-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.dayflow-today-refresh {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+
+.dayflow-today-refresh:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.dayflow-today-status {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.dayflow-today-empty {
+  text-align: center;
+  padding: 24px 8px;
+  color: var(--text-muted);
+}
+
+.dayflow-today-empty button {
+  margin-top: 12px;
+}
+
+.dayflow-today-body h1 {
+  font-size: 1.1rem;
+  margin-top: 0;
+}
+
+.dayflow-today-body h2 {
+  font-size: 0.95rem;
+  margin-top: 1em;
+}
+
+.dayflow-today-body h3 {
+  font-size: 0.85rem;
 }

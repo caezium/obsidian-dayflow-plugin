@@ -1,12 +1,23 @@
 /**
  * Orchestrates a single sync run: open the DB, walk recent days, write each
  * note, then walk the ISO weeks those days touch and write each weekly note.
+ *
+ * Now respects:
+ *   - settings.skipDaysBefore (YYYY-MM-DD lower bound)
+ *   - settings.awEnabled (per-day enrichment via ActivityWatch)
+ *   - settings.appendToDailyNote (stamp the user's daily note with a link)
  */
-import type { Vault } from 'obsidian';
+import type { App, Vault } from 'obsidian';
 import { openReadOnly, defaultDbPath } from './db.js';
 import { lastNDays, isoWeekKey } from './boundary.js';
 import { exportDailyNote } from './exporters/daily-note.js';
 import { exportWeeklyNote } from './exporters/weekly-note.js';
+import { fetchEnrichment } from './data/activitywatch.js';
+import { fetchTimelineCards } from './data/timeline.js';
+import { categoryBreakdown } from './aggregators/category.js';
+import { goalProgress } from './aggregators/goals.js';
+import { fetchDayGoals } from './data/goals.js';
+import { stampDailyNote } from './exporters/daily-note-stamp.js';
 import type { PluginSettings } from './types.js';
 
 export interface SyncCounts {
@@ -20,12 +31,17 @@ export interface SyncCounts {
   startedAt: string;
 }
 
-export async function runSync(
-  pluginDir: string,
-  vault: Vault,
-  settings: PluginSettings,
-  onLog: (msg: string) => void = () => undefined
-): Promise<SyncCounts> {
+export interface SyncContext {
+  pluginDir: string;
+  app: App;
+  vault: Vault;
+  settings: PluginSettings;
+  onLog?: (msg: string) => void;
+}
+
+export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
+  const { pluginDir, app, vault, settings } = ctx;
+  const onLog = ctx.onLog ?? (() => undefined);
   const startedAt = new Date().toISOString();
   const t0 = performance.now();
   const counts: SyncCounts = {
@@ -38,8 +54,7 @@ export async function runSync(
   try {
     dbHandle = await openReadOnly(pluginDir, dbPath);
   } catch (err) {
-    const e = err as Error & { code?: string };
-    onLog(`Failed to open DB at ${dbPath}: ${e.message}`);
+    onLog(`Failed to open DB at ${dbPath}: ${(err as Error).message}`);
     counts.errors += 1;
     counts.durationMs = performance.now() - t0;
     throw err;
@@ -47,15 +62,40 @@ export async function runSync(
 
   const { db, tables } = dbHandle;
   try {
-    const days = lastNDays(settings.syncDays);
+    let days = lastNDays(settings.syncDays);
+    if (settings.skipDaysBefore) {
+      const skipBefore = settings.skipDaysBefore;
+      const before = days.length;
+      days = days.filter((d) => d >= skipBefore);
+      const dropped = before - days.length;
+      if (dropped > 0) onLog(`Skipped ${dropped} days before ${skipBefore}`);
+    }
     const weeks = new Set(days.map((d) => isoWeekKey(d)));
-    onLog(`Syncing ${days.length} days (${days[days.length - 1]} → ${days[0]})`);
+    onLog(`Syncing ${days.length} days${days.length ? ` (${days[days.length - 1]} → ${days[0]})` : ''}`);
 
     for (const day of days) {
       try {
-        const r = await exportDailyNote(db, tables, vault, day, settings);
+        // Pre-fetch cards once so we can both enrich and pass into the exporter.
+        const cards = fetchTimelineCards(db, day, { includeDeleted: settings.includeDeleted });
+        let enrichment = null;
+        if (settings.awEnabled && cards.length > 0) {
+          enrichment = await fetchEnrichment(settings.awUrl, day, cards, {
+            webBrowserOnly: settings.awWebBrowserOnly,
+          });
+          if (enrichment) onLog(`  ${day}  AW ${Math.round(enrichment.totalSeconds / 60)}m observed, ${enrichment.dayApps.length} apps`);
+        }
+        const r = await exportDailyNote(db, tables, vault, day, settings, enrichment);
         bumpCount(counts, r.status);
         onLog(`  ${day}  daily  ${r.status}`);
+
+        // Optionally stamp the user's daily note with a link to ours.
+        if (settings.appendToDailyNote && r.status !== 'no-data') {
+          const breakdown = categoryBreakdown(cards);
+          const gp = goalProgress(cards, fetchDayGoals(db, tables, day));
+          const noteBasename = `Dayflow_${day}`;
+          const stamped = await stampDailyNote(app, vault, day, noteBasename, breakdown.totalMinutes, gp?.focusPct != null ? gp.focusPct * 100 : null);
+          if (stamped) onLog(`  ${day}  stamped ${stamped}`);
+        }
       } catch (err) {
         counts.errors += 1;
         onLog(`  ${day}  daily  ERROR: ${(err as Error).message}`);

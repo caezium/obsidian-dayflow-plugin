@@ -1,6 +1,7 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type DayflowPlugin from './main.js';
 import { DEFAULT_SETTINGS } from './types.js';
+import { installBases } from './exporters/bases.js';
 
 export class DayflowSettingTab extends PluginSettingTab {
   plugin: DayflowPlugin;
@@ -16,9 +17,12 @@ export class DayflowSettingTab extends PluginSettingTab {
 
     containerEl.createEl('h2', { text: 'Dayflow' });
     containerEl.createEl('p', {
-      text: 'Read-only export of your Dayflow data into this vault. The plugin opens chunks.sqlite in read-only mode and never makes network calls.',
+      text: 'Read-only export of your Dayflow data into this vault. Opens chunks.sqlite in read-only mode and never makes network calls except to localhost (when ActivityWatch enrichment is enabled).',
       cls: 'setting-item-description',
     });
+
+    // ---- Output ---------------------------------------------------------
+    containerEl.createEl('h3', { text: 'Output' });
 
     new Setting(containerEl)
       .setName('Output folder')
@@ -54,6 +58,9 @@ export class DayflowSettingTab extends PluginSettingTab {
           })
       );
 
+    // ---- Sync schedule --------------------------------------------------
+    containerEl.createEl('h3', { text: 'Sync' });
+
     new Setting(containerEl)
       .setName('Days to sync')
       .setDesc('How many days back each sync covers.')
@@ -63,6 +70,21 @@ export class DayflowSettingTab extends PluginSettingTab {
             const n = parseInt(v, 10);
             if (!Number.isNaN(n) && n >= 1 && n <= 365) {
               this.plugin.settings.syncDays = n;
+              await this.plugin.saveSettings();
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Skip days before')
+      .setDesc('YYYY-MM-DD lower bound. Days before this are never synced even on --force. Leave blank for no bound.')
+      .addText((t) =>
+        t.setValue(this.plugin.settings.skipDaysBefore)
+          .setPlaceholder('e.g. 2026-01-01')
+          .onChange(async (v) => {
+            const s = v.trim();
+            if (s === '' || /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+              this.plugin.settings.skipDaysBefore = s;
               await this.plugin.saveSettings();
             }
           })
@@ -106,6 +128,9 @@ export class DayflowSettingTab extends PluginSettingTab {
           })
       );
 
+    // ---- Output formatting ----------------------------------------------
+    containerEl.createEl('h3', { text: 'Formatting' });
+
     new Setting(containerEl)
       .setName('Category wikilinks')
       .setDesc('Render categories as [[wikilinks]] for the graph view.')
@@ -128,8 +153,84 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Append to Obsidian daily note')
+      .setDesc('Stamp a small Dayflow callout into the existing Daily Notes file (if any) for each synced day.')
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.appendToDailyNote)
+          .onChange(async (v) => {
+            this.plugin.settings.appendToDailyNote = v;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    // ---- ActivityWatch --------------------------------------------------
+    containerEl.createEl('h3', { text: 'ActivityWatch enrichment' });
+    containerEl.createEl('p', {
+      text: 'When enabled, the plugin queries your local ActivityWatch server to add precise per-app minutes to each timeline card. Queries hit localhost only.',
+      cls: 'setting-item-description',
+    });
+
+    new Setting(containerEl)
+      .setName('Enable ActivityWatch sync')
+      .setDesc('Off by default. Requires ActivityWatch running locally.')
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.awEnabled)
+          .onChange(async (v) => {
+            this.plugin.settings.awEnabled = v;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('ActivityWatch URL')
+      .addText((t) =>
+        t.setValue(this.plugin.settings.awUrl)
+          .setPlaceholder(DEFAULT_SETTINGS.awUrl)
+          .onChange(async (v) => {
+            this.plugin.settings.awUrl = v.trim() || DEFAULT_SETTINGS.awUrl;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Filter web events to browsers only')
+      .setDesc('Ignore browser-tab events when the active window is not a browser. Recommended.')
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.awWebBrowserOnly)
+          .onChange(async (v) => {
+            this.plugin.settings.awWebBrowserOnly = v;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    // ---- Dashboards & actions -------------------------------------------
+    containerEl.createEl('h3', { text: 'Dashboards' });
+
+    new Setting(containerEl)
+      .setName('Install Bases dashboards')
+      .setDesc('Drop "Recent days", "Weekly review", and "Focus performance" .base files into your output folder. Skips files that already exist.')
+      .addButton((b) =>
+        b.setButtonText('Install')
+          .setCta()
+          .onClick(async () => {
+            const folder = this.plugin.getOutputFolder();
+            const res = await installBases(this.plugin.app.vault, folder, false);
+            new Notice(`Installed ${res.written.length} dashboards, skipped ${res.skipped.length} existing.`, 6000);
+          })
+      )
+      .addButton((b) =>
+        b.setButtonText('Reinstall')
+          .setWarning()
+          .onClick(async () => {
+            const folder = this.plugin.getOutputFolder();
+            const res = await installBases(this.plugin.app.vault, folder, true);
+            new Notice(`Reinstalled ${res.written.length} dashboards (overwrote ${res.skipped.length}).`, 6000);
+          })
+      );
+
+    new Setting(containerEl)
       .setName('Run sync now')
-      .setDesc('Trigger an immediate sync. Same as the command-palette action.')
+      .setDesc('Trigger an immediate sync.')
       .addButton((b) =>
         b.setButtonText('Sync now')
           .setCta()

@@ -14,7 +14,7 @@ import { writeIfChanged, readCreatedAt } from '../util/io.js';
 import { fmtDuration, fmtHours, slugify } from '../util/time.js';
 import { tableCell } from '../util/escape.js';
 import { isoWeekKey, isDayComplete, fmtLongDate } from '../boundary.js';
-import type { PluginSettings, JournalEntry, Standup, DayGoals, GoalProgress, TimelineCard, Rating, CategoryBreakdown, AppStat } from '../types.js';
+import type { PluginSettings, JournalEntry, Standup, DayGoals, GoalProgress, TimelineCard, Rating, CategoryBreakdown, AppStat, AwEnrichment } from '../types.js';
 
 export interface ExportResult {
   path: string;
@@ -26,7 +26,8 @@ export async function exportDailyNote(
   tables: Set<string>,
   vault: Vault,
   dayString: string,
-  settings: PluginSettings
+  settings: PluginSettings,
+  awEnrichment: AwEnrichment | null = null
 ): Promise<ExportResult> {
   const dir = settings.outputFolder.replace(/\/+$/, '') + '/' + settings.dailySubfolder;
   const filename = `Dayflow_${dayString}.md`;
@@ -77,10 +78,10 @@ export async function exportDailyNote(
     headerSection(dayString, breakdown, goalProg),
     standupSection(standup),
     journalIntentionsSection(journal),
-    timelineSection(cards, ratings, settings),
+    timelineSection(cards, ratings, settings, awEnrichment),
     journalReflectionsSection(journal),
     distractionsSection(cards),
-    appsSection(apps),
+    appsSection(apps, awEnrichment),
     goalCategoriesSection(goals, settings),
     relatedSection(dayString),
   ].filter(Boolean);
@@ -149,7 +150,7 @@ function journalIntentionsSection(journal: JournalEntry | null): string {
   return parts.length ? `## Journal\n\n${parts.join('\n\n')}\n` : '';
 }
 
-function timelineSection(cards: TimelineCard[], ratings: Rating[], settings: PluginSettings): string {
+function timelineSection(cards: TimelineCard[], ratings: Rating[], settings: PluginSettings, aw: AwEnrichment | null): string {
   if (cards.length === 0) return '## Timeline\n\n*No timeline cards.*\n';
   const ratingByCard = new Map<number, string>();
   for (const r of ratings) {
@@ -176,6 +177,14 @@ function timelineSection(cards: TimelineCard[], ratings: Rating[], settings: Plu
       meta.push(`[Video summary](${url})`);
     }
     out.push(`\n${meta.join(' · ')}`);
+    // ActivityWatch precise app breakdown, if available for this card.
+    const awForCard = aw?.byCardId.get(c.id);
+    if (awForCard && awForCard.length > 0) {
+      const parts = awForCard.slice(0, 4).map((a) => `${a.app} ${Math.round(a.seconds / 60)}m`);
+      const rest = awForCard.length - 4;
+      const trailer = rest > 0 ? ` · +${rest} more` : '';
+      out.push(`*AW:* ${parts.join(' · ')}${trailer}`);
+    }
   }
   out.push('');
   return out.join('\n');
@@ -191,13 +200,28 @@ function distractionsSection(cards: TimelineCard[]): string {
   return `## Distractions\n\n${items}\n`;
 }
 
-function appsSection(apps: AppStat[]): string {
-  if (apps.length === 0) return '';
-  const top = apps.slice(0, 8);
-  const rest = apps.length - top.length;
-  const rows = top.map((a) => `| ${tableCell(a.app)} | ${a.sessions} | ${a.minutes} |`).join('\n');
-  const trailer = rest > 0 ? `\n*… and ${rest} more apps*\n` : '';
-  return `## Top apps\n\n| App | Sessions | Minutes |\n| --- | --- | --- |\n${rows}\n${trailer}`;
+function appsSection(apps: AppStat[], aw: AwEnrichment | null): string {
+  let dayflowSection = '';
+  if (apps.length > 0) {
+    const top = apps.slice(0, 8);
+    const rest = apps.length - top.length;
+    const rows = top.map((a) => `| ${tableCell(a.app)} | ${a.sessions} | ${a.minutes} |`).join('\n');
+    const trailer = rest > 0 ? `\n*… and ${rest} more apps*\n` : '';
+    dayflowSection = `## Top apps (Dayflow)\n\n| App | Sessions | Minutes |\n| --- | --- | --- |\n${rows}\n${trailer}`;
+  }
+  if (!aw || aw.dayApps.length === 0) return dayflowSection;
+
+  const top = aw.dayApps.slice(0, 10);
+  const rest = aw.dayApps.length - top.length;
+  const awRows = top
+    .map((a) => `| ${tableCell(a.app)} | ${Math.round(a.seconds / 60)} |`)
+    .join('\n');
+  const afkLine = aw.afkSeconds > 0
+    ? `\n\n*AFK total:* ${Math.round(aw.afkSeconds / 60)} min`
+    : '';
+  const awTrailer = rest > 0 ? `\n*… and ${rest} more apps*` : '';
+  const awSection = `## Top apps (ActivityWatch)\n\n| App | Minutes |\n| --- | --- |\n${awRows}${awTrailer}${afkLine}\n`;
+  return dayflowSection + '\n' + awSection;
 }
 
 function journalReflectionsSection(journal: JournalEntry | null): string {

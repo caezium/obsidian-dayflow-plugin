@@ -38,6 +38,10 @@ export async function writeIfChanged(
   return { written: true, created: true };
 }
 
+export async function fileExistsInVault(vault: Vault, filePath: string): Promise<boolean> {
+  return Boolean(vault.getFileByPath(filePath));
+}
+
 export async function readCreatedAt(vault: Vault, filePath: string): Promise<string | null> {
   const file = vault.getFileByPath(filePath);
   if (!file) return null;

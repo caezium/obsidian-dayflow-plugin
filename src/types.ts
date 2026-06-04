@@ -140,24 +140,38 @@ export interface GoalProgress {
   isSkipped: boolean;
 }
 
+export interface AwEnrichment {
+  // Per timeline-card-id, rolled-up app minutes from ActivityWatch in that window.
+  byCardId: Map<number, { app: string; seconds: number }[]>;
+  // Day-wide app totals (in seconds) regardless of card boundaries.
+  dayApps: { app: string; seconds: number }[];
+  // Day-wide AFK seconds.
+  afkSeconds: number;
+  // Total observed seconds (sum of window events).
+  totalSeconds: number;
+}
+
 export interface PluginSettings {
-  /** Folder within the vault to write notes into. */
   outputFolder: string;
-  /** Subfolder names. */
   dailySubfolder: string;
   weeklySubfolder: string;
-  /** Absolute path to chunks.sqlite. Empty = default macOS location. */
   dbPath: string;
-  /** Days back to sync each run. */
   syncDays: number;
-  /** Minutes between background syncs (0 = disabled). */
   intervalMinutes: number;
-  /** Run a sync immediately on Obsidian startup. */
   syncOnStartup: boolean;
-  /** Render category names as [[wikilinks]]. */
   categoryWikilinks: boolean;
-  /** Include deleted cards. */
   includeDeleted: boolean;
+  /** Don't sync any day before this YYYY-MM-DD string. Empty = no bound. */
+  skipDaysBefore: string;
+  /** Append a callout pointing to the Dayflow daily into the user's Daily Notes file. */
+  appendToDailyNote: boolean;
+  /** Watermark — last successful sync ISO timestamp. */
+  lastSyncAt: string;
+  // ActivityWatch
+  awEnabled: boolean;
+  awUrl: string;
+  awAfkIsBreak: boolean;
+  awWebBrowserOnly: boolean;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -170,4 +184,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   syncOnStartup: true,
   categoryWikilinks: true,
   includeDeleted: false,
+  skipDaysBefore: '',
+  appendToDailyNote: false,
+  lastSyncAt: '',
+  awEnabled: false,
+  awUrl: 'http://localhost:5600',
+  awAfkIsBreak: true,
+  awWebBrowserOnly: true,
 };
