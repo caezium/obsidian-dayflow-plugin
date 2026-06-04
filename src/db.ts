@@ -4,6 +4,12 @@
  * We open the DB by reading the file from disk via Node's fs (Obsidian
  * plugins on desktop have full Node access). The Database object stays in
  * memory for the duration of a sync run.
+ *
+ * IMPORTANT: sql.js tries to `fetch()` its WASM by default, which fails in
+ * Electron renderer context with "both async and sync fetching of the wasm
+ * failed." We work around this by reading the WASM bytes ourselves from
+ * the plugin folder and passing them via `wasmBinary` so sql.js never
+ * tries to fetch.
  */
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import * as fs from 'fs';
@@ -12,22 +18,23 @@ import * as os from 'os';
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
-/**
- * Locate the bundled sql-wasm.wasm relative to the running main.js so we
- * can hand it to sql.js' locateFile.
- */
-function wasmPath(pluginDir: string): string {
-  return path.join(pluginDir, 'sql-wasm.wasm');
-}
-
 export async function initSql(pluginDir: string): Promise<SqlJsStatic> {
   if (sqlPromise) return sqlPromise;
-  sqlPromise = initSqlJs({
-    locateFile: (file: string) => {
-      if (file.endsWith('.wasm')) return wasmPath(pluginDir);
-      return file;
-    },
-  });
+  const wasmFile = path.join(pluginDir, 'sql-wasm.wasm');
+  if (!fs.existsSync(wasmFile)) {
+    throw new Error(
+      `sql-wasm.wasm not found at ${wasmFile}. Reinstall the plugin or rebuild with \`npm run build\`.`
+    );
+  }
+  const wasmBuffer = fs.readFileSync(wasmFile);
+  // sql.js types expect ArrayBuffer; Node Buffer is a view over one. Slice out
+  // the exact bytes so the type checker is happy and we pass a pure ArrayBuffer.
+  const wasmBinary = wasmBuffer.buffer.slice(
+    wasmBuffer.byteOffset,
+    wasmBuffer.byteOffset + wasmBuffer.byteLength
+  );
+  // Pass wasmBinary directly — sql.js skips its internal fetch when this is set.
+  sqlPromise = initSqlJs({ wasmBinary });
   return sqlPromise;
 }
 
