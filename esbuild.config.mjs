@@ -1,8 +1,6 @@
 import esbuild from 'esbuild';
 import process from 'process';
-import builtins from 'builtin-modules';
-import fs from 'fs/promises';
-import path from 'path';
+import { builtinModules as builtins } from 'node:module';
 
 const banner = `/* Dayflow plugin — auto-generated bundle. Do not edit. */`;
 
@@ -35,18 +33,10 @@ const context = await esbuild.context({
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
   outfile: 'main.js',
+  // The `binary` loader inlines .wasm files as Uint8Array at build time, so
+  // sql-wasm.wasm is embedded into main.js (no separate release asset).
   loader: { '.wasm': 'binary' },
 });
-
-// Copy sql.js WASM next to main.js so the runtime can fetch it via locateFile.
-async function copyWasm() {
-  const src = path.resolve('node_modules/sql.js/dist/sql-wasm.wasm');
-  const dest = path.resolve('sql-wasm.wasm');
-  await fs.copyFile(src, dest);
-  console.log('Copied sql-wasm.wasm');
-}
-
-await copyWasm();
 
 if (watch) {
   await context.watch();

@@ -1,39 +1,34 @@
 /**
  * sql.js wrapper for read-only access to Dayflow's chunks.sqlite.
  *
- * We open the DB by reading the file from disk via Node's fs (Obsidian
- * plugins on desktop have full Node access). The Database object stays in
- * memory for the duration of a sync run.
+ * The Database object stays in memory for the duration of a sync run.
  *
  * IMPORTANT: sql.js tries to `fetch()` its WASM by default, which fails in
  * Electron renderer context with "both async and sync fetching of the wasm
- * failed." We work around this by reading the WASM bytes ourselves from
- * the plugin folder and passing them via `wasmBinary` so sql.js never
+ * failed." We work around this by importing the WASM at build time via
+ * esbuild's `binary` loader — it bakes the ~644 KB blob directly into
+ * main.js as a Uint8Array. We pass that via `wasmBinary` so sql.js never
  * tries to fetch.
+ *
+ * Bundling the WASM into main.js (instead of shipping it as a separate
+ * release asset) is also required for Obsidian's community plugin store —
+ * the installer only downloads main.js, manifest.json, and styles.css.
  */
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
+import wasmBytes from '../node_modules/sql.js/dist/sql-wasm.wasm';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 
-export async function initSql(pluginDir: string): Promise<SqlJsStatic> {
+export async function initSql(): Promise<SqlJsStatic> {
   if (sqlPromise) return sqlPromise;
-  const wasmFile = path.join(pluginDir, 'sql-wasm.wasm');
-  if (!fs.existsSync(wasmFile)) {
-    throw new Error(
-      `sql-wasm.wasm not found at ${wasmFile}. Reinstall the plugin or rebuild with \`npm run build\`.`
-    );
-  }
-  const wasmBuffer = fs.readFileSync(wasmFile);
-  // sql.js types expect ArrayBuffer; Node Buffer is a view over one. Slice out
-  // the exact bytes so the type checker is happy and we pass a pure ArrayBuffer.
-  const wasmBinary = wasmBuffer.buffer.slice(
-    wasmBuffer.byteOffset,
-    wasmBuffer.byteOffset + wasmBuffer.byteLength
-  );
-  // Pass wasmBinary directly — sql.js skips its internal fetch when this is set.
+  // wasmBytes is a Uint8Array view into the bundle. Copy into a fresh
+  // ArrayBuffer to satisfy sql.js's wasmBinary type (which doesn't accept
+  // SharedArrayBuffer-typed buffers).
+  const wasmBinary = new ArrayBuffer(wasmBytes.byteLength);
+  new Uint8Array(wasmBinary).set(wasmBytes);
   sqlPromise = initSqlJs({ wasmBinary });
   return sqlPromise;
 }
@@ -51,7 +46,6 @@ export function defaultDbPath(): string {
  * older Dayflow schemas.
  */
 export async function openReadOnly(
-  pluginDir: string,
   dbPath: string
 ): Promise<{ db: Database; tables: Set<string> }> {
   if (!fs.existsSync(dbPath)) {
@@ -59,7 +53,7 @@ export async function openReadOnly(
     (err as Error & { code?: string }).code = 'DB_NOT_FOUND';
     throw err;
   }
-  const SQL = await initSql(pluginDir);
+  const SQL = await initSql();
   const buf = fs.readFileSync(dbPath);
   const db = new SQL.Database(new Uint8Array(buf));
   // Smoke test.

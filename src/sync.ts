@@ -32,7 +32,6 @@ export interface SyncCounts {
 }
 
 export interface SyncContext {
-  pluginDir: string;
   app: App;
   vault: Vault;
   settings: PluginSettings;
@@ -40,7 +39,7 @@ export interface SyncContext {
 }
 
 export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
-  const { pluginDir, app, vault, settings } = ctx;
+  const { app, vault, settings } = ctx;
   const onLog = ctx.onLog ?? (() => undefined);
   const startedAt = new Date().toISOString();
   const t0 = performance.now();
@@ -52,7 +51,7 @@ export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
   const dbPath = settings.dbPath || defaultDbPath();
   let dbHandle;
   try {
-    dbHandle = await openReadOnly(pluginDir, dbPath);
+    dbHandle = await openReadOnly(dbPath);
   } catch (err) {
     onLog(`Failed to open DB at ${dbPath}: ${(err as Error).message}`);
     counts.errors += 1;

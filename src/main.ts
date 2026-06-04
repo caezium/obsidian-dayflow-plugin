@@ -1,4 +1,4 @@
-import { Notice, Plugin, normalizePath, WorkspaceLeaf } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, type PluginSettings } from './types.js';
 import { runSync, type SyncCounts } from './sync.js';
 import { DayflowSettingTab } from './settings.js';
@@ -116,7 +116,6 @@ export default class DayflowPlugin extends Plugin {
     let counts: SyncCounts | null = null;
     try {
       counts = await runSync({
-        pluginDir: this.pluginDir(),
         app: this.app,
         vault: this.app.vault,
         settings: this.settings,
@@ -192,11 +191,6 @@ export default class DayflowPlugin extends Plugin {
     }
     this.statusBarEl.setText(`Dayflow · ${formatAgo(last)}`);
     this.statusBarEl.setAttr('aria-label', `Last sync: ${last}`);
-  }
-
-  pluginDir(): string {
-    const vaultPath = (this.app.vault.adapter as { getBasePath?: () => string }).getBasePath?.() ?? '';
-    return normalizePath(`${vaultPath}/${this.app.vault.configDir}/plugins/${this.manifest.id}`);
   }
 
   // Expose for the settings tab to call after the user clicks "Install dashboards".
