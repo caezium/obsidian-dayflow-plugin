@@ -13,6 +13,10 @@ This plugin reads Dayflow's `chunks.sqlite` **read-only** and writes daily + wee
 ### Daily notes
 A `> [!info] Day at a glance` callout at the top, then your standup, intentions, full timeline (with thumbs-up/down ratings inline), reflections, distractions, top apps, and goal categories. Frontmatter exposes every signal — `total_minutes`, `focus_pct`, `categories`, `top_apps`, etc. — so Bases and Dataview can slice it freely.
 
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/7e35768e-c575-4cf8-a9c3-c64e5ed0a076" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/5ee36710-7b44-4b42-8f44-5fac59dcea4b" />
+
+
 ### Weekly notes
 Inline SVG charts that read in both light and dark themes:
 - **Treemap** of time per category
@@ -20,14 +24,25 @@ Inline SVG charts that read in both light and dark themes:
 - **Focus heatmap** — hours × days
 - **Sankey** of app-to-app transitions
 
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/f883e4c7-f5af-4e4a-a10e-175ec63210b5" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/21213720-ad81-416f-8ba7-b6aec43ee3a7" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/a845cd60-9b5e-425e-8d68-2474949c2d27" />
+
+
 ### Side-pane Today view
 A live-rendered view of today's note with a refresh button and last-sync indicator. Refreshes automatically after every sync.
+
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/793c0279-bf5c-4730-9b27-8b89868ea3e9" />
+
 
 ### Bases dashboards
 One click installs three `.base` files:
 - **Recent days** — card gallery of the last 30 days
 - **Weekly review** — sortable table of every weekly note
 - **Focus performance** — table grouped by goal hit / close / miss
+
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/191770b0-cee5-483d-98d0-2e7cf7ad4885" />
+
 
 ### ActivityWatch enrichment (opt-in)
 Flip a toggle to query your local ActivityWatch and get precise per-app minutes under every Dayflow timeline card, plus a full per-day app breakdown. Web-tab noise filtered to active-browser windows only.
@@ -131,8 +146,6 @@ Output: `main.js` (CJS bundle, ~150 KB), `sql-wasm.wasm` (~644 KB) copied from `
 ## Acknowledgements
 
 - [Dayflow](https://github.com/JerryZLiu/Dayflow) by Jerry Liu — the app that captures everything
-- [zeroliu/dayflow-sync](https://github.com/zeroliu/dayflow-sync) — prior-art markdown sync that informed the initial design
-- [Full Calendar Remastered](https://github.com/obsidian-full-calendar-remastered/plugin-full-calendar) — sophisticated ActivityWatch integration that taught us the `requestUrl` quirk and the web-bucket noise filter
 
 ---
 
