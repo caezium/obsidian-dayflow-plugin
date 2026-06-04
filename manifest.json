@@ -1,11 +1,10 @@
 {
   "id": "obsidian-dayflow",
   "name": "Dayflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.5.0",
-  "description": "Export Dayflow timeline, journal, standup, goals, and ratings into this vault. Weekly notes with inline SVG treemap, heatmap, and Sankey charts.",
+  "description": "Bring Dayflow into Obsidian. Reads chunks.sqlite read-only, writes daily and weekly notes with inline SVG charts, Bases dashboards, and optional ActivityWatch enrichment.",
   "author": "caezium",
   "authorUrl": "https://github.com/caezium",
-  "isDesktopOnly": true,
-  "fundingUrl": ""
+  "isDesktopOnly": true
 }
