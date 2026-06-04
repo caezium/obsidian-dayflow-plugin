@@ -1,0 +1,19 @@
+/* Dayflow plugin styles. Most chart styling is inline in the SVG; these
+   wrappers give the SVGs proper spacing and constrain max width. */
+
+.dayflow-treemap,
+.dayflow-bars,
+.dayflow-heatmap,
+.dayflow-sankey {
+  margin: 0.5em 0 1.25em 0;
+  overflow-x: auto;
+}
+
+.dayflow-treemap svg,
+.dayflow-bars svg,
+.dayflow-heatmap svg,
+.dayflow-sankey svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

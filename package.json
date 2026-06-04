@@ -1,0 +1,30 @@
+{
+  "name": "obsidian-dayflow-plugin",
+  "version": "0.1.0",
+  "description": "Obsidian plugin that exports Dayflow data into the vault",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs --watch",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit --skipLibCheck"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["obsidian-plugin", "dayflow", "time-tracking"],
+  "author": "caezium",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/sql.js": "^1.4.9",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.20.0",
+    "obsidian": "^1.5.7",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "sql.js": "^1.10.3"
+  }
+}
