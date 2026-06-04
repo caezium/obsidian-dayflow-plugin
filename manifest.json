@@ -1,7 +1,7 @@
 {
-  "id": "obsidian-dayflow",
+  "id": "dayflow",
   "name": "Dayflow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "minAppVersion": "1.5.0",
   "description": "Bring Dayflow into Obsidian. Reads chunks.sqlite read-only, writes daily and weekly notes with inline SVG charts, Bases dashboards, and optional ActivityWatch enrichment.",
   "author": "caezium",
