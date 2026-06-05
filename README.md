@@ -113,6 +113,7 @@ Your daily and weekly notes appear under the configured folder. Open the side pa
 - **Zero network calls by default.** The only network code path is the optional ActivityWatch enrichment, which only ever talks to `localhost:5600`.
 - **No telemetry.** No analytics, no error reporting, no remote logging.
 - **Desktop-only.** `isDesktopOnly: true` in the manifest. Runtime guard via `Platform.isMobile` means even if loaded on mobile, the plugin no-ops cleanly with a one-line explainer.
+- **Build provenance.** Every release is built in GitHub Actions and signed with a [sigstore](https://www.sigstore.dev/) attestation linking the binary to its exact source commit. Verify with `gh attestation verify main.js --owner caezium`.
 
 You can audit the network surface with `grep -RIE 'fetch\(|axios|requestUrl|XMLHttpRequest|https?://' src/`. The only matches will be inside `src/data/activitywatch.ts` (gated behind the `awEnabled` toggle) and the SVG XML namespace (`http://www.w3.org/2000/svg`) which is not a network call.
 
