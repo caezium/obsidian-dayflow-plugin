@@ -13,8 +13,7 @@ This plugin reads Dayflow's `chunks.sqlite` **read-only** and writes daily + wee
 ### Daily notes
 A `> [!info] Day at a glance` callout at the top — tracked hours, top categories, focus/distraction progress, current focus streak. Then a compact 24-cell hourly strip colored by what you mostly did each hour, your standup highlights/tasks/blockers, journal intentions and reflections, the full timeline (each card with thumbs-up/down ratings inline), top apps, and goal categories. Frontmatter exposes every signal — `total_minutes`, `focus_pct`, `categories`, `top_apps`, etc. — so Bases and Dataview can slice it freely.
 
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/7e35768e-c575-4cf8-a9c3-c64e5ed0a076" />
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/5ee36710-7b44-4b42-8f44-5fac59dcea4b" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/cead02f3-2144-43dc-a83e-7b469a411e13" />
 
 
 ### Weekly notes
@@ -28,9 +27,9 @@ Inline SVG charts that read in both light and dark themes (they all use `current
 - **Sankey** of app-to-app transitions
 - **Week-over-week comparison** — `▲ +2h` / `▼ -3h` deltas vs last week's totals + focus + distraction
 
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/f883e4c7-f5af-4e4a-a10e-175ec63210b5" />
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/21213720-ad81-416f-8ba7-b6aec43ee3a7" />
-<img width="500" alt="image" src="https://github.com/user-attachments/assets/a845cd60-9b5e-425e-8d68-2474949c2d27" />
+<img width="443" height="867" alt="image" src="https://github.com/user-attachments/assets/38d46100-adf3-41ef-9437-9be6f8e59d4f" />
+<img width="421" height="833" alt="image" src="https://github.com/user-attachments/assets/4808a6d9-8d46-4763-955b-da1f954e2520" />
+<img width="452" height="887" alt="image" src="https://github.com/user-attachments/assets/2eee063f-fa83-4fe2-9d6e-330ba8cdc48c" />
 
 
 ### Year notes
@@ -42,7 +41,7 @@ Three views you can dock anywhere:
 - **This Week** — same shape, for the current weekly note
 - **Dashboard** — tiny start page: hero number (today's hours), one-sentence focus-goal status, three navigation buttons. Heatmap-free, deliberately minimal.
 
-<img width="700" alt="image" src="https://github.com/user-attachments/assets/793c0279-bf5c-4730-9b27-8b89868ea3e9" />
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/21278c54-c1fa-4ebb-9647-49b63b7e74e3" />
 
 
 ### Bases dashboards
