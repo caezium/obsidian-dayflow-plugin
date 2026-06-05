@@ -8,6 +8,10 @@ import { fetchRatings } from '../data/ratings.js';
 import { categoryBreakdown } from '../aggregators/category.js';
 import { appBreakdown } from '../aggregators/apps.js';
 import { goalProgress } from '../aggregators/goals.js';
+import { dominantCategoryGrid } from '../aggregators/dominant-category.js';
+import { focusStreak } from '../aggregators/streak.js';
+import { renderHourlyStrip } from '../viz/hourly-strip.js';
+import { buildColorMap } from '../util/colors.js';
 import { frontmatter } from '../formatters/frontmatter.js';
 import { wikilink, weekLink } from '../formatters/wikilinks.js';
 import { writeIfChanged, readCreatedAt } from '../util/io.js';
@@ -52,6 +56,23 @@ export async function exportDailyNote(
   const apps = appBreakdown(cards);
   const goalProg = goalProgress(cards, goals);
 
+  // Color map seeded with explicit hex from day_goal_categories.
+  const colorOverrides: Record<string, string> = {};
+  if (goals) {
+    for (const c of [...goals.focusCategories, ...goals.distractionCategories]) {
+      colorOverrides[c.category_name] = c.category_color_hex;
+    }
+  }
+  const colorMap = buildColorMap(breakdown.categories.map((c) => c.category), colorOverrides);
+
+  // Hourly strip data: dominantCategoryGrid over a single day, then renderHourlyStrip collapses halves to hours.
+  const dayGrid = dominantCategoryGrid(cards, [dayString], 30);
+  const hourlyStripSvg = cards.length > 0 ? renderHourlyStrip(dayGrid[0], colorMap) : '';
+
+  // Focus streak — read from existing daily notes' frontmatter. Cheap (file metadata only).
+  const dailyFolder = settings.outputFolder.replace(/\/+$/, '') + '/' + settings.dailySubfolder;
+  const streak = await focusStreak(vault, dailyFolder, dayString);
+
   const fm = frontmatter({
     dayflow_day: dayString,
     week: isoWeekKey(dayString),
@@ -75,7 +96,8 @@ export async function exportDailyNote(
   });
 
   const sections = [
-    headerSection(dayString, breakdown, goalProg),
+    headerSection(dayString, breakdown, goalProg, streak.days),
+    hourlyStripSection(hourlyStripSvg),
     standupSection(standup),
     journalIntentionsSection(journal),
     timelineSection(cards, ratings, settings, awEnrichment),
@@ -91,7 +113,7 @@ export async function exportDailyNote(
   return { path: filePath, status: res.written ? (res.created ? 'created' : 'updated') : 'unchanged' };
 }
 
-function headerSection(dayString: string, breakdown: CategoryBreakdown, goalProg: GoalProgress | null): string {
+function headerSection(dayString: string, breakdown: CategoryBreakdown, goalProg: GoalProgress | null, streakDays: number): string {
   const lines = [`# ${fmtLongDate(dayString)}`, '', '> [!info] Day at a glance'];
 
   if (breakdown.totalMinutes === 0) {
@@ -116,8 +138,16 @@ function headerSection(dayString: string, breakdown: CategoryBreakdown, goalProg
       lines.push(`> 🚫 Distractions: **${fmtDuration(goalProg.distractionActualMinutes)}** / ${fmtDuration(goalProg.distractionLimitMinutes)} limit (${pct}%)${over}`);
     }
   }
+  if (streakDays > 0) {
+    lines.push(`> 🔥 ${streakDays}-day focus streak going into today`);
+  }
   lines.push('');
   return lines.join('\n');
+}
+
+function hourlyStripSection(svg: string): string {
+  if (!svg) return '';
+  return `## Today's hourly strip\n\n<div class="dayflow-hourly-strip">\n${svg}\n</div>\n`;
 }
 
 function standupSection(standup: Standup | null): string {

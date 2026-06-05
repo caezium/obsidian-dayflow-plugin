@@ -1,5 +1,5 @@
 import { xml } from '../util/escape.js';
-import { colorFor } from '../util/colors.js';
+import { colorForApp } from '../util/colors.js';
 import type { AppTransition } from '../types.js';
 
 const W = 760;
@@ -41,19 +41,19 @@ export function renderSankey(transitions: AppTransition[]): string {
     const tMid = ty.y + ty.h / 2;
     const c1x = leftX + NODE_W + (rightX - leftX - NODE_W) * 0.4;
     const c2x = leftX + NODE_W + (rightX - leftX - NODE_W) * 0.6;
-    const color = colorFor(t.source);
+    const color = colorForApp(t.source);
     return `<path d="M ${leftX + NODE_W} ${sMid} C ${c1x} ${sMid}, ${c2x} ${tMid}, ${rightX} ${tMid}" stroke="${color}" stroke-opacity="0.35" stroke-width="${w}" fill="none"><title>${xml(t.source)} → ${xml(t.target)} (${t.count})</title></path>`;
   }).join('');
 
   const leftNodes = topSources.map((k) => {
     const { y, h } = leftYs.get(k)!;
-    const color = colorFor(k);
+    const color = colorForApp(k);
     return `<g><rect x="${leftX}" y="${y}" width="${NODE_W}" height="${h}" rx="2" fill="${color}"></rect><text x="${leftX - 6}" y="${y + h / 2 + 4}" text-anchor="end" fill="currentColor" font-family="-apple-system, system-ui, sans-serif" font-size="11">${xml(truncate(k, MAX_LABEL))} (${sources.get(k)})</text></g>`;
   }).join('');
 
   const rightNodes = topTargets.map((k) => {
     const { y, h } = rightYs.get(k)!;
-    const color = colorFor(k);
+    const color = colorForApp(k);
     return `<g><rect x="${rightX}" y="${y}" width="${NODE_W}" height="${h}" rx="2" fill="${color}"></rect><text x="${rightX + NODE_W + 6}" y="${y + h / 2 + 4}" text-anchor="start" fill="currentColor" font-family="-apple-system, system-ui, sans-serif" font-size="11">${xml(truncate(k, MAX_LABEL))} (${targets.get(k)})</text></g>`;
   }).join('');
 

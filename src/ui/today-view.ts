@@ -48,7 +48,7 @@ export class TodayView extends ItemView {
     header.createEl('h3', { text: 'Dayflow · Today', cls: 'dayflow-today-title' });
     const refreshBtn = header.createEl('button', { cls: 'dayflow-today-refresh', attr: { 'aria-label': 'Sync now' } });
     setIcon(refreshBtn, 'refresh-cw');
-    refreshBtn.addEventListener('click', () => this.plugin.runSyncNow());
+    refreshBtn.addEventListener('click', () => { void this.plugin.runSyncNow(); });
 
     this.statusEl = container.createDiv({ cls: 'dayflow-today-status' });
     this.bodyEl = container.createDiv({ cls: 'dayflow-today-body' });
@@ -81,9 +81,11 @@ export class TodayView extends ItemView {
       const empty = this.bodyEl.createDiv({ cls: 'dayflow-today-empty' });
       empty.createEl('p', { text: `No note yet for ${today}.` });
       const tryBtn = empty.createEl('button', { text: 'Sync now', cls: 'mod-cta' });
-      tryBtn.addEventListener('click', async () => {
-        await this.plugin.runSyncNow();
-        await this.refresh();
+      tryBtn.addEventListener('click', () => {
+        void (async () => {
+          await this.plugin.runSyncNow();
+          await this.refresh();
+        })();
       });
       return;
     }

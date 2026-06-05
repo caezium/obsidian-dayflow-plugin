@@ -15,14 +15,14 @@ export class DayflowSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'Dayflow' });
+    new Setting(containerEl).setName('Dayflow').setHeading();
     containerEl.createEl('p', {
       text: 'Read-only export of your Dayflow data into this vault. Opens chunks.sqlite in read-only mode and never makes network calls except to localhost (when ActivityWatch enrichment is enabled).',
       cls: 'setting-item-description',
     });
 
     // ---- Output ---------------------------------------------------------
-    containerEl.createEl('h3', { text: 'Output' });
+    new Setting(containerEl).setName('Output').setHeading();
 
     new Setting(containerEl)
       .setName('Output folder')
@@ -59,7 +59,7 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     // ---- Sync schedule --------------------------------------------------
-    containerEl.createEl('h3', { text: 'Sync' });
+    new Setting(containerEl).setName('Sync').setHeading();
 
     new Setting(containerEl)
       .setName('Days to sync')
@@ -129,7 +129,7 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     // ---- Output formatting ----------------------------------------------
-    containerEl.createEl('h3', { text: 'Formatting' });
+    new Setting(containerEl).setName('Formatting').setHeading();
 
     new Setting(containerEl)
       .setName('Category wikilinks')
@@ -164,7 +164,7 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     // ---- ActivityWatch --------------------------------------------------
-    containerEl.createEl('h3', { text: 'ActivityWatch enrichment' });
+    new Setting(containerEl).setName('ActivityWatch enrichment').setHeading();
     containerEl.createEl('p', {
       text: 'When enabled, the plugin queries your local ActivityWatch server to add precise per-app minutes to each timeline card. Queries hit localhost only.',
       cls: 'setting-item-description',
@@ -204,7 +204,7 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     // ---- Dashboards & actions -------------------------------------------
-    containerEl.createEl('h3', { text: 'Dashboards' });
+    new Setting(containerEl).setName('Dashboards').setHeading();
 
     new Setting(containerEl)
       .setName('Install Bases dashboards')
@@ -220,7 +220,7 @@ export class DayflowSettingTab extends PluginSettingTab {
       )
       .addButton((b) =>
         b.setButtonText('Reinstall')
-          .setWarning()
+          .setClass('mod-warning')
           .onClick(async () => {
             const folder = this.plugin.getOutputFolder();
             const res = await installBases(this.plugin.app.vault, folder, true);

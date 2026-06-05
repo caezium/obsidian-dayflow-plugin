@@ -18,5 +18,5 @@ export function tableCell(s: string | null | undefined): string {
 
 export function wikilinkSafe(s: string | null | undefined): string {
   if (s == null) return '';
-  return String(s).replace(/[\[\]|#^]/g, '');
+  return String(s).replace(/[[\]|#^]/g, '');
 }

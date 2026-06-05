@@ -4,7 +4,11 @@
 .dayflow-treemap,
 .dayflow-bars,
 .dayflow-heatmap,
-.dayflow-sankey {
+.dayflow-sankey,
+.dayflow-donut,
+.dayflow-lines,
+.dayflow-workflow,
+.dayflow-hourly-strip {
   margin: 0.5em 0 1.25em 0;
   overflow-x: auto;
 }
@@ -12,10 +16,20 @@
 .dayflow-treemap svg,
 .dayflow-bars svg,
 .dayflow-heatmap svg,
-.dayflow-sankey svg {
+.dayflow-sankey svg,
+.dayflow-donut svg,
+.dayflow-lines svg,
+.dayflow-workflow svg,
+.dayflow-hourly-strip svg {
   max-width: 100%;
   height: auto;
   display: block;
+}
+
+.dayflow-donut {
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Status bar item */

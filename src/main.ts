@@ -34,7 +34,7 @@ export default class DayflowPlugin extends Plugin {
     // ---- Status bar ------------------------------------------------------
     this.statusBarEl = this.addStatusBarItem();
     this.statusBarEl.addClass('dayflow-status');
-    this.statusBarEl.addEventListener('click', () => this.runSyncNow());
+    this.statusBarEl.addEventListener('click', () => { void this.runSyncNow(); });
     this.updateStatusBar();
     // Tick the "X min ago" text every minute.
     this.statusTickHandle = window.setInterval(() => this.updateStatusBar(), 60_000);
@@ -44,31 +44,31 @@ export default class DayflowPlugin extends Plugin {
     this.addCommand({
       id: 'sync-now',
       name: 'Sync now',
-      callback: () => this.runSyncNow(),
+      callback: () => { void this.runSyncNow(); },
     });
     this.addCommand({
       id: 'open-today',
       name: "Open today's note",
-      callback: () => this.openDayflowNote(getDayString(new Date())),
+      callback: () => { void this.openDayflowNote(getDayString(new Date())); },
     });
     this.addCommand({
       id: 'open-week',
       name: "Open this week's note",
-      callback: () => this.openWeekNote(isoWeekKey(getDayString(new Date()))),
+      callback: () => { void this.openWeekNote(isoWeekKey(getDayString(new Date()))); },
     });
     this.addCommand({
       id: 'open-today-view',
       name: "Open Today side pane",
-      callback: () => this.activateTodayView(),
+      callback: () => { void this.activateTodayView(); },
     });
 
     // ---- Ribbon icons ----------------------------------------------------
-    this.addRibbonIcon('sync', 'Dayflow: sync now', () => this.runSyncNow());
-    this.addRibbonIcon('activity', 'Dayflow: open Today view', () => this.activateTodayView());
+    this.addRibbonIcon('sync', 'Dayflow: sync now', () => { void this.runSyncNow(); });
+    this.addRibbonIcon('activity', 'Dayflow: open Today view', () => { void this.activateTodayView(); });
 
     // ---- Auto-sync triggers ---------------------------------------------
     if (this.settings.syncOnStartup) {
-      this.registerInterval(window.setTimeout(() => this.runSyncNow(true), 5000));
+      this.registerInterval(window.setTimeout(() => { void this.runSyncNow(true); }, 5000));
     }
     this.scheduleInterval();
   }
@@ -79,7 +79,7 @@ export default class DayflowPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const data = (await this.loadData()) || {};
+    const data = ((await this.loadData()) as Partial<PluginSettings> | null) ?? {};
     this.settings = { ...DEFAULT_SETTINGS, ...data };
   }
 
@@ -96,7 +96,7 @@ export default class DayflowPlugin extends Plugin {
     if (isMobile()) return;
     const mins = this.settings.intervalMinutes;
     if (mins > 0) {
-      this.intervalHandle = window.setInterval(() => this.runSyncNow(true), mins * 60 * 1000);
+      this.intervalHandle = window.setInterval(() => { void this.runSyncNow(true); }, mins * 60 * 1000);
       this.registerInterval(this.intervalHandle);
     }
   }

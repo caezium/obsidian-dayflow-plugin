@@ -35,16 +35,24 @@ export function fetchTimelineCardsRange(
   return queryAll<TimelineCardRow>(db, sql, [fromDay, toDay]).map(parseCard).filter(notFailed);
 }
 
+interface CardMetadata {
+  appSites?: {
+    primary?: string;
+    secondary?: string;
+  };
+  distractions?: TimelineCard['distractions'];
+}
+
 function parseCard(row: TimelineCardRow): TimelineCard {
   let appPrimary: string | null = null;
   let appSecondary: string | null = null;
   let distractions: TimelineCard['distractions'] = [];
   if (row.metadata) {
     try {
-      const parsed = JSON.parse(row.metadata);
-      appPrimary = parsed?.appSites?.primary ?? null;
-      appSecondary = parsed?.appSites?.secondary ?? null;
-      if (Array.isArray(parsed?.distractions)) distractions = parsed.distractions;
+      const parsed = JSON.parse(row.metadata) as CardMetadata;
+      appPrimary = parsed.appSites?.primary ?? null;
+      appSecondary = parsed.appSites?.secondary ?? null;
+      if (Array.isArray(parsed.distractions)) distractions = parsed.distractions;
     } catch {
       /* ignore malformed metadata */
     }
