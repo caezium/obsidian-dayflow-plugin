@@ -3,6 +3,8 @@ import { DEFAULT_SETTINGS, type PluginSettings } from './types.js';
 import { runSync, type SyncCounts } from './sync.js';
 import { DayflowSettingTab } from './settings.js';
 import { TodayView, TODAY_VIEW_TYPE } from './ui/today-view.js';
+import { WeekView, WEEK_VIEW_TYPE } from './ui/week-view.js';
+import { DashboardView, DASHBOARD_VIEW_TYPE } from './ui/dashboard-view.js';
 import { isMobile } from './util/mobile.js';
 import { getDayString, isoWeekKey } from './boundary.js';
 
@@ -28,8 +30,10 @@ export default class DayflowPlugin extends Plugin {
       return;
     }
 
-    // ---- Side pane view --------------------------------------------------
+    // ---- Side pane views -------------------------------------------------
     this.registerView(TODAY_VIEW_TYPE, (leaf) => new TodayView(leaf, this));
+    this.registerView(WEEK_VIEW_TYPE, (leaf) => new WeekView(leaf, this));
+    this.registerView(DASHBOARD_VIEW_TYPE, (leaf) => new DashboardView(leaf, this));
 
     // ---- Status bar ------------------------------------------------------
     this.statusBarEl = this.addStatusBarItem();
@@ -61,10 +65,21 @@ export default class DayflowPlugin extends Plugin {
       name: "Open Today side pane",
       callback: () => { void this.activateTodayView(); },
     });
+    this.addCommand({
+      id: 'open-week-view',
+      name: "Open This Week side pane",
+      callback: () => { void this.activateWeekView(); },
+    });
+    this.addCommand({
+      id: 'open-dashboard',
+      name: 'Open Dashboard',
+      callback: () => { void this.activateDashboardView(); },
+    });
 
     // ---- Ribbon icons ----------------------------------------------------
     this.addRibbonIcon('sync', 'Dayflow: sync now', () => { void this.runSyncNow(); });
     this.addRibbonIcon('activity', 'Dayflow: open Today view', () => { void this.activateTodayView(); });
+    this.addRibbonIcon('layout-dashboard', 'Dayflow: open Dashboard', () => { void this.activateDashboardView(); });
 
     // ---- Auto-sync triggers ---------------------------------------------
     if (this.settings.syncOnStartup) {
@@ -144,14 +159,46 @@ export default class DayflowPlugin extends Plugin {
       leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true);
       await leaf.setViewState({ type: TODAY_VIEW_TYPE, active: true });
     }
-    workspace.revealLeaf(leaf);
+    await workspace.revealLeaf(leaf);
+  }
+
+  async activateWeekView(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(WEEK_VIEW_TYPE)[0];
+    if (!leaf) {
+      leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true);
+      await leaf.setViewState({ type: WEEK_VIEW_TYPE, active: true });
+    }
+    await workspace.revealLeaf(leaf);
+  }
+
+  async activateDashboardView(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      leaf = workspace.getLeaf(true);
+      await leaf.setViewState({ type: DASHBOARD_VIEW_TYPE, active: true });
+    }
+    await workspace.revealLeaf(leaf);
   }
 
   refreshTodayViews(): void {
     for (const leaf of this.app.workspace.getLeavesOfType(TODAY_VIEW_TYPE)) {
       const view = leaf.view;
       if (view instanceof TodayView) {
-        view.refresh().catch((err) => console.error('[Dayflow] Today view refresh failed:', err));
+        view.refresh().catch((err: Error) => console.error('[Dayflow] Today view refresh failed:', err));
+      }
+    }
+    for (const leaf of this.app.workspace.getLeavesOfType(WEEK_VIEW_TYPE)) {
+      const view = leaf.view;
+      if (view instanceof WeekView) {
+        view.refresh().catch((err: Error) => console.error('[Dayflow] Week view refresh failed:', err));
+      }
+    }
+    for (const leaf of this.app.workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE)) {
+      const view = leaf.view;
+      if (view instanceof DashboardView) {
+        view.refresh().catch((err: Error) => console.error('[Dayflow] Dashboard refresh failed:', err));
       }
     }
   }

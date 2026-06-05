@@ -15,7 +15,6 @@ export class DayflowSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName('Dayflow').setHeading();
     containerEl.createEl('p', {
       text: 'Read-only export of your Dayflow data into this vault. Opens chunks.sqlite in read-only mode and never makes network calls except to localhost (when ActivityWatch enrichment is enabled).',
       cls: 'setting-item-description',

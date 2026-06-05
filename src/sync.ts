@@ -7,17 +7,19 @@
  *   - settings.awEnabled (per-day enrichment via ActivityWatch)
  *   - settings.appendToDailyNote (stamp the user's daily note with a link)
  */
-import type { App, Vault } from 'obsidian';
+import { Notice, type App, type Vault } from 'obsidian';
 import { openReadOnly, defaultDbPath } from './db.js';
 import { lastNDays, isoWeekKey } from './boundary.js';
 import { exportDailyNote } from './exporters/daily-note.js';
 import { exportWeeklyNote } from './exporters/weekly-note.js';
+import { exportYearNote } from './exporters/year-note.js';
 import { fetchEnrichment } from './data/activitywatch.js';
 import { fetchTimelineCards } from './data/timeline.js';
 import { categoryBreakdown } from './aggregators/category.js';
 import { goalProgress } from './aggregators/goals.js';
 import { fetchDayGoals } from './data/goals.js';
 import { stampDailyNote } from './exporters/daily-note-stamp.js';
+import { checkSchema, reportToHumanLines } from './util/schema-check.js';
 import type { PluginSettings } from './types.js';
 
 export interface SyncCounts {
@@ -61,6 +63,19 @@ export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
 
   const { db, tables } = dbHandle;
   try {
+    // Schema drift check — fires once per sync. Critical issues throw; non-critical surface as a Notice.
+    const report = checkSchema(db, tables);
+    if (!report.ok) {
+      const lines = reportToHumanLines(report);
+      onLog(`Schema check: ${lines.join(' | ')}`);
+      if (report.missingRequired.length > 0) {
+        throw new Error(`Schema incompatible: missing required tables ${report.missingRequired.join(', ')}`);
+      }
+      new Notice(`Dayflow schema drift: ${lines[0]}`, 8000);
+    } else if (report.unknownTables.length > 0) {
+      onLog(`Schema: Dayflow has new tables we don't read yet: ${report.unknownTables.join(', ')}`);
+    }
+
     let days = lastNDays(settings.syncDays);
     if (settings.skipDaysBefore) {
       const skipBefore = settings.skipDaysBefore;
@@ -110,6 +125,17 @@ export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
         counts.errors += 1;
         onLog(`  ${week}  weekly  ERROR: ${(err as Error).message}`);
       }
+    }
+
+    // Year note — only the current year. Cheap (DB range read + one SVG).
+    try {
+      const currentYear = new Date(`${days[0] ?? new Date().toISOString().slice(0,10)}T12:00:00`).getFullYear();
+      const r = await exportYearNote(db, vault, currentYear, settings);
+      bumpCount(counts, r.status);
+      onLog(`  ${currentYear}  yearly  ${r.status}`);
+    } catch (err) {
+      counts.errors += 1;
+      onLog(`  yearly  ERROR: ${(err as Error).message}`);
     }
   } finally {
     db.close();

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-dayflow-plugin",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Obsidian plugin that exports Dayflow data into the vault",
   "main": "main.js",
   "type": "module",
