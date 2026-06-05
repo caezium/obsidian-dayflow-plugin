@@ -1,0 +1,73 @@
+name: Release
+
+# Triggered by pushing a semver tag (no `v` prefix — Obsidian's community
+# store requires the tag to match `manifest.json` `version` exactly).
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+# `attestations: write` and `id-token: write` are required by
+# actions/attest-build-provenance. `contents: write` is required to
+# create and update the release.
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Verify built files exist
+        run: |
+          test -f main.js
+          test -f manifest.json
+          test -f styles.css
+          echo "main.js: $(wc -c < main.js) bytes"
+
+      # Generates a sigstore-backed attestation proving these binaries were
+      # built from this exact commit by this exact workflow. The attestation
+      # is uploaded to GitHub's attestation store and linked to the artifacts
+      # so anyone can verify them with `gh attestation verify`.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Idempotent: if the release already exists (e.g. created manually
+          # before the workflow), upload-or-replace the assets instead of
+          # erroring out.
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} exists — uploading assets with --clobber"
+            gh release upload "${GITHUB_REF_NAME}" main.js manifest.json styles.css --clobber
+          else
+            echo "Creating release ${GITHUB_REF_NAME}"
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --generate-notes \
+              main.js manifest.json styles.css
+          fi
