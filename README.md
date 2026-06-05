@@ -11,26 +11,36 @@ This plugin reads Dayflow's `chunks.sqlite` **read-only** and writes daily + wee
 ## What you get
 
 ### Daily notes
-A `> [!info] Day at a glance` callout at the top, then your standup, intentions, full timeline (with thumbs-up/down ratings inline), reflections, distractions, top apps, and goal categories. Frontmatter exposes every signal — `total_minutes`, `focus_pct`, `categories`, `top_apps`, etc. — so Bases and Dataview can slice it freely.
+A `> [!info] Day at a glance` callout at the top — tracked hours, top categories, focus/distraction progress, current focus streak. Then a compact 24-cell hourly strip colored by what you mostly did each hour, your standup highlights/tasks/blockers, journal intentions and reflections, the full timeline (each card with thumbs-up/down ratings inline), top apps, and goal categories. Frontmatter exposes every signal — `total_minutes`, `focus_pct`, `categories`, `top_apps`, etc. — so Bases and Dataview can slice it freely.
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/7e35768e-c575-4cf8-a9c3-c64e5ed0a076" />
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/5ee36710-7b44-4b42-8f44-5fac59dcea4b" />
 
 
 ### Weekly notes
-Inline SVG charts that read in both light and dark themes:
-- **Treemap** of time per category
+Inline SVG charts that read in both light and dark themes (they all use `currentColor`):
+- **Donut** of weekly distribution with total in the hole
 - **Bar chart** of category totals
-- **Focus heatmap** — hours × days
+- **Nested treemap** — categories as soft tinted blocks, apps inside colored by brand (YouTube red, GitHub charcoal, Claude orange, …)
+- **Workflow grid** — 30-min × 7-day cells colored by dominant category (mirrors Dayflow's "your workflow this week")
+- **Focus heatmap** — intensity by hour × day
+- **Context shifts vs distractions** — multi-series line chart over the days
 - **Sankey** of app-to-app transitions
+- **Week-over-week comparison** — `▲ +2h` / `▼ -3h` deltas vs last week's totals + focus + distraction
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/f883e4c7-f5af-4e4a-a10e-175ec63210b5" />
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/21213720-ad81-416f-8ba7-b6aec43ee3a7" />
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/a845cd60-9b5e-425e-8d68-2474949c2d27" />
 
 
-### Side-pane Today view
-A live-rendered view of today's note with a refresh button and last-sync indicator. Refreshes automatically after every sync.
+### Year notes
+`Dayflow_YYYY.md` written on every sync with a **GitHub-style 53-week × 7-day activity heatmap** plus year totals and your best day.
+
+### Side panes
+Three views you can dock anywhere:
+- **Today** — live-rendered today's note with refresh + last-sync indicator
+- **This Week** — same shape, for the current weekly note
+- **Dashboard** — tiny start page: hero number (today's hours), one-sentence focus-goal status, three navigation buttons. Heatmap-free, deliberately minimal.
 
 <img width="700" alt="image" src="https://github.com/user-attachments/assets/793c0279-bf5c-4730-9b27-8b89868ea3e9" />
 
@@ -45,12 +55,18 @@ One click installs three `.base` files:
 
 
 ### ActivityWatch enrichment (opt-in)
-Flip a toggle to query your local ActivityWatch and get precise per-app minutes under every Dayflow timeline card, plus a full per-day app breakdown. Web-tab noise filtered to active-browser windows only.
+Flip a toggle to query your local ActivityWatch and get precise per-app minutes under every Dayflow timeline card, plus a full per-day app breakdown. Web-tab noise filtered to active-browser windows only. Localhost only — auto-detects buckets via `/api/0/buckets`.
 
-### Status bar + commands
+### Schema drift detection
+Every sync checks the live `chunks.sqlite` against the schema fingerprint the plugin actually reads. Missing required tables abort with a clear error; unknown new tables Dayflow.app added since the plugin was written surface as a Notice so you know to check for an update.
+
+### Stamp into your Obsidian Daily Note
+Optional toggle: appends a small `> [!info] Dayflow` callout into your existing core-Daily-Notes file linking the Dayflow note for that day. Stamp block is bounded by HTML comments so re-syncs update in place instead of duplicating.
+
+### Status bar + commands + ribbon
 - Status bar: `Dayflow · synced 12m ago` — click to sync now
-- Commands: `Sync now`, `Open today's note`, `Open this week's note`, `Open Today side pane`
-- Ribbon icons: sync + Today view
+- Commands: `Sync now`, `Open today's note`, `Open this week's note`, `Open Today side pane`, `Open This Week side pane`, `Open Dashboard`
+- Ribbon icons: sync · Today view · Dashboard
 
 ---
 
@@ -63,14 +79,14 @@ Flip a toggle to query your local ActivityWatch and get precise per-app minutes 
 4. Enable **Dayflow** in Settings → Community plugins
 
 ### Manual install
-1. Download `main.js`, `manifest.json`, `styles.css`, `sql-wasm.wasm` from the latest [release](https://github.com/caezium/obsidian-dayflow-plugin/releases)
+1. Download `main.js`, `manifest.json`, `styles.css` from the latest [release](https://github.com/caezium/obsidian-dayflow-plugin/releases) (the SQLite WASM is bundled into `main.js` — no separate asset)
 2. Place them in `<vault>/.obsidian/plugins/dayflow/`
 3. Reload Obsidian, then enable **Dayflow** in Settings → Community plugins
 
 ### Requirements
 - macOS (Dayflow.app is macOS-only)
 - [Dayflow](https://dayflow.space) installed and recording activity
-- Obsidian 1.5.0 or newer
+- Obsidian 1.8.0 or newer
 
 ---
 
@@ -128,19 +144,20 @@ npm install
 npm run build   # type-check + bundle to main.js
 ```
 
-Output: `main.js` (CJS bundle, ~150 KB), `sql-wasm.wasm` (~644 KB) copied from `node_modules/sql.js/dist/`. Drop those + `manifest.json` + `styles.css` into `<vault>/.obsidian/plugins/dayflow/`.
+Output: `main.js` (CJS bundle, ~1 MB — esbuild's `binary` loader inlines `sql-wasm.wasm` directly into the bundle so there's no separate asset). Drop that + `manifest.json` + `styles.css` into `<vault>/.obsidian/plugins/dayflow/`.
 
 ---
 
 ## Architecture notes
 
-- **`src/db.ts`** — `sql.js` wrapper. Reads `sql-wasm.wasm` via Node `fs` and passes it via `wasmBinary` because `sql.js`'s default `fetch()` path fails in Electron's renderer.
+- **`src/db.ts`** — `sql.js` wrapper. The WASM blob is imported via esbuild's `binary` loader at build time (`import wasmBytes from '../node_modules/sql.js/dist/sql-wasm.wasm'`) so it ends up inlined in `main.js` as a `Uint8Array`. We hand it to `initSqlJs({ wasmBinary })` so sql.js never tries to `fetch()` it — that fails in Electron's renderer.
 - **`src/data/`** — One module per Dayflow table: timeline, journal, standup, goals, ratings, observations. Each gracefully degrades when a table is missing (for older Dayflow schemas).
-- **`src/aggregators/`** — Pure functions that turn rows into category breakdowns, per-app totals, focus heatmaps, etc.
-- **`src/viz/`** — Pure-JS SVG generators (treemap, heatmap, sankey, bars). All text uses `fill="currentColor"` so it inherits the user's theme.
-- **`src/exporters/`** — Daily-note + weekly-note + Bases + daily-note-stamp.
-- **`src/ui/today-view.ts`** — Side-pane `ItemView` that uses `MarkdownRenderer.render()` to embed today's note.
+- **`src/aggregators/`** — Pure functions that turn rows into category breakdowns, per-app totals, focus heatmaps, context shifts, dominant-category grids, week-over-week deltas, focus streaks, etc.
+- **`src/viz/`** — Pure-JS SVG generators (treemap with nested mode, heatmap, sankey, bars, donut, lines, workflow-grid, hourly-strip, year-heatmap). Text fills use `currentColor` for theme awareness; app tiles use brand colors via `colorForApp`.
+- **`src/exporters/`** — Daily-note + weekly-note + year-note + Bases + daily-note-stamp.
+- **`src/ui/`** — Three `ItemView` subclasses (today, week, dashboard). Today and Week embed their respective notes via `MarkdownRenderer.render()`; Dashboard is fully DOM-rendered.
 - **`src/data/activitywatch.ts`** — REST calls via Obsidian's `requestUrl` (fetch/axios are CORS-blocked). Auto-discovers window/web/afk buckets.
+- **`src/util/schema-check.ts`** — Compares the live SQLite schema to the fingerprint each fetcher expects. Notice for drift, abort for missing-required.
 
 ---
 
