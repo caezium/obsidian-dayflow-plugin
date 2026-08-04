@@ -1,6 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type DayflowPlugin from './main.js';
 import { DEFAULT_SETTINGS } from './types.js';
+import type { CardSummaryMode } from './types.js';
 import { installBases } from './exporters/bases.js';
 
 export class DayflowSettingTab extends PluginSettingTab {
@@ -142,6 +143,23 @@ export class DayflowSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Timeline card summaries')
+      .setDesc('Dayflow stores a one-line summary and a longer detailed summary per card. Choose which ones land in the daily note. "Detailed" and "Short" fall back to the other field when the preferred one is empty.')
+      .addDropdown((d) =>
+        d.addOptions({
+          detailed: 'Detailed summary only',
+          summary: 'Short summary only',
+          both: 'Both',
+          none: 'Neither',
+        })
+          .setValue(this.plugin.settings.cardSummaryMode)
+          .onChange(async (v) => {
+            this.plugin.settings.cardSummaryMode = v as CardSummaryMode;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
       .setName('Include deleted timeline cards')
       .addToggle((t) =>
         t.setValue(this.plugin.settings.includeDeleted)
@@ -234,6 +252,15 @@ export class DayflowSettingTab extends PluginSettingTab {
         b.setButtonText('Sync now')
           .setCta()
           .onClick(() => this.plugin.runSyncNow())
+      );
+
+    new Setting(containerEl)
+      .setName('Rebuild notes')
+      .setDesc('Normal syncs leave finished days alone, so formatting changes only affect new notes. This rewrites every day in the sync window (last "Days to sync" days) with the current settings.')
+      .addButton((b) =>
+        b.setButtonText('Rebuild')
+          .setClass('mod-warning')
+          .onClick(() => this.plugin.runSyncNow(false, true))
       );
   }
 }

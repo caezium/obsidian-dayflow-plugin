@@ -1,7 +1,7 @@
 {
   "id": "dayflow",
   "name": "Dayflow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minAppVersion": "1.8.0",
   "description": "Read your Dayflow activity timeline read-only and write daily + weekly notes into your vault, with inline SVG charts, Bases dashboards, and optional ActivityWatch enrichment.",
   "author": "caezium",

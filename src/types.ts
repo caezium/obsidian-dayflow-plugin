@@ -151,6 +151,12 @@ export interface AwEnrichment {
   totalSeconds: number;
 }
 
+/**
+ * Which of Dayflow's two per-card blurbs land in the daily note.
+ * 'detailed' and 'summary' fall back to the other one when the preferred field is empty.
+ */
+export type CardSummaryMode = 'detailed' | 'summary' | 'both' | 'none';
+
 export interface PluginSettings {
   outputFolder: string;
   dailySubfolder: string;
@@ -160,6 +166,8 @@ export interface PluginSettings {
   intervalMinutes: number;
   syncOnStartup: boolean;
   categoryWikilinks: boolean;
+  /** Which timeline-card summary fields to write into the daily note. */
+  cardSummaryMode: CardSummaryMode;
   includeDeleted: boolean;
   /** Don't sync any day before this YYYY-MM-DD string. Empty = no bound. */
   skipDaysBefore: string;
@@ -183,6 +191,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   intervalMinutes: 30,
   syncOnStartup: true,
   categoryWikilinks: true,
+  cardSummaryMode: 'detailed',
   includeDeleted: false,
   skipDaysBefore: '',
   appendToDailyNote: false,

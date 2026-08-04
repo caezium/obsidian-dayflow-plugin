@@ -51,6 +51,11 @@ export default class DayflowPlugin extends Plugin {
       callback: () => { void this.runSyncNow(); },
     });
     this.addCommand({
+      id: 'rebuild-notes',
+      name: 'Rebuild notes in sync window',
+      callback: () => { void this.runSyncNow(false, true); },
+    });
+    this.addCommand({
       id: 'open-today',
       name: "Open today's note",
       callback: () => { void this.openDayflowNote(getDayString(new Date())); },
@@ -116,7 +121,7 @@ export default class DayflowPlugin extends Plugin {
     }
   }
 
-  async runSyncNow(silent = false): Promise<void> {
+  async runSyncNow(silent = false, rebuild = false): Promise<void> {
     if (isMobile()) {
       if (!silent) new Notice('Dayflow is desktop-only — sync skipped.');
       return;
@@ -134,6 +139,7 @@ export default class DayflowPlugin extends Plugin {
         app: this.app,
         vault: this.app.vault,
         settings: this.settings,
+        rebuild,
         onLog: (msg) => console.log('[Dayflow]', msg),
       });
       this.settings.lastSyncAt = new Date().toISOString();

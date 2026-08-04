@@ -37,6 +37,8 @@ export interface SyncContext {
   app: App;
   vault: Vault;
   settings: PluginSettings;
+  /** Rewrite already-finished days too — used after a formatting setting changes. */
+  rebuild?: boolean;
   onLog?: (msg: string) => void;
 }
 
@@ -98,7 +100,7 @@ export async function runSync(ctx: SyncContext): Promise<SyncCounts> {
           });
           if (enrichment) onLog(`  ${day}  AW ${Math.round(enrichment.totalSeconds / 60)}m observed, ${enrichment.dayApps.length} apps`);
         }
-        const r = await exportDailyNote(db, tables, vault, day, settings, enrichment);
+        const r = await exportDailyNote(db, tables, vault, day, settings, enrichment, ctx.rebuild);
         bumpCount(counts, r.status);
         onLog(`  ${day}  daily  ${r.status}`);
 

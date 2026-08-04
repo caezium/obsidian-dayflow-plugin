@@ -66,7 +66,7 @@ Optional toggle: appends a small `> [!info] Dayflow` callout into your existing 
 
 ### Status bar + commands + ribbon
 - Status bar: `Dayflow · synced 12m ago` — click to sync now
-- Commands: `Sync now`, `Open today's note`, `Open this week's note`, `Open Today side pane`, `Open This Week side pane`, `Open Dashboard`
+- Commands: `Sync now`, `Rebuild notes in sync window`, `Open today's note`, `Open this week's note`, `Open Today side pane`, `Open This Week side pane`, `Open Dashboard`
 - Ribbon icons: sync · Today view · Dashboard
 
 ---
@@ -116,6 +116,7 @@ Your daily and weekly notes appear under the configured folder. Open the side pa
 | Sync | `intervalMinutes` | `30` | Background sync interval. `0` disables. |
 | Sync | `dbPath` | (empty) | Override path to `chunks.sqlite` |
 | Formatting | `categoryWikilinks` | `true` | Render categories as `[[wikilinks]]` |
+| Formatting | `cardSummaryMode` | `detailed` | Which per-card blurbs go in the daily note: `detailed`, `summary`, `both`, `none` |
 | Formatting | `includeDeleted` | `false` | Include cards marked deleted in Dayflow |
 | Formatting | `appendToDailyNote` | `false` | Stamp a callout into your existing Daily Notes file |
 | ActivityWatch | `awEnabled` | `false` | Off by default — flip on if you have AW running |

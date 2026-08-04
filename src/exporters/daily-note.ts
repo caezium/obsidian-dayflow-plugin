@@ -18,7 +18,7 @@ import { writeIfChanged, readCreatedAt } from '../util/io.js';
 import { fmtDuration, fmtHours, slugify } from '../util/time.js';
 import { tableCell } from '../util/escape.js';
 import { isoWeekKey, isDayComplete, fmtLongDate } from '../boundary.js';
-import type { PluginSettings, JournalEntry, Standup, DayGoals, GoalProgress, TimelineCard, Rating, CategoryBreakdown, AppStat, AwEnrichment } from '../types.js';
+import type { PluginSettings, CardSummaryMode, JournalEntry, Standup, DayGoals, GoalProgress, TimelineCard, Rating, CategoryBreakdown, AppStat, AwEnrichment } from '../types.js';
 
 export interface ExportResult {
   path: string;
@@ -31,13 +31,15 @@ export async function exportDailyNote(
   vault: Vault,
   dayString: string,
   settings: PluginSettings,
-  awEnrichment: AwEnrichment | null = null
+  awEnrichment: AwEnrichment | null = null,
+  /** Ignore the "day already finished" guard so formatting changes reach past notes. */
+  rebuild = false
 ): Promise<ExportResult> {
   const dir = settings.outputFolder.replace(/\/+$/, '') + '/' + settings.dailySubfolder;
   const filename = `Dayflow_${dayString}.md`;
   const filePath = `${dir}/${filename}`;
 
-  if (isDayComplete(dayString)) {
+  if (!rebuild && isDayComplete(dayString)) {
     const existingCreated = await readCreatedAt(vault, filePath);
     if (existingCreated) return { path: filePath, status: 'skipped-complete' };
   }
@@ -180,6 +182,22 @@ function journalIntentionsSection(journal: JournalEntry | null): string {
   return parts.length ? `## Journal\n\n${parts.join('\n\n')}\n` : '';
 }
 
+/**
+ * Which blurbs a card contributes, per the user's mode. 'detailed' and 'summary' each fall
+ * back to the other field so a card is never silently blank; 'both' de-dupes identical text.
+ */
+function cardSummaries(c: TimelineCard, mode: CardSummaryMode): string[] {
+  const short = (c.summary || '').trim();
+  const detailed = (c.detailed_summary || '').trim();
+  if (mode === 'none') return [];
+  if (mode === 'both') {
+    if (short && detailed && short !== detailed) return [short, detailed];
+    return [detailed || short].filter(Boolean);
+  }
+  const picked = mode === 'summary' ? short || detailed : detailed || short;
+  return picked ? [picked] : [];
+}
+
 function timelineSection(cards: TimelineCard[], ratings: Rating[], settings: PluginSettings, aw: AwEnrichment | null): string {
   if (cards.length === 0) return '## Timeline\n\n*No timeline cards.*\n';
   const ratingByCard = new Map<number, string>();
@@ -196,8 +214,7 @@ function timelineSection(cards: TimelineCard[], ratings: Rating[], settings: Plu
     const badge = rating === 'up' ? ' 👍' : rating === 'down' ? ' 👎' : '';
     out.push(`\n### ${c.start} – ${c.end} · ${cat}${sub}${badge}`);
     out.push(`**${c.title}**`);
-    if (c.detailed_summary) out.push(`\n${c.detailed_summary}`);
-    else if (c.summary) out.push(`\n${c.summary}`);
+    for (const text of cardSummaries(c, settings.cardSummaryMode)) out.push(`\n${text}`);
     const apps = [c.appPrimary, c.appSecondary].filter(Boolean) as string[];
     const meta: string[] = [];
     if (apps.length) meta.push(`*Apps:* ${apps.join(', ')}`);
